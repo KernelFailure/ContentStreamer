@@ -55,7 +55,7 @@ public class AWSProvider {
         return credProvider;
     }
 
-    private static AmazonS3Client getS3Client(Context context) {
+    public static AmazonS3Client getS3Client(Context context) {
 
         Log.d(TAG, "getS3Client: Start Get S3 client");
 

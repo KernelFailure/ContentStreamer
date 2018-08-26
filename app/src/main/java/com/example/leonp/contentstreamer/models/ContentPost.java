@@ -2,32 +2,38 @@ package com.example.leonp.contentstreamer.models;
 
 public class ContentPost {
 
-    private String postId;
-    private String postTitle;
-    private String createdAt;
-    private String postSize;
+    String title;
+    String author;
+    String createdAt;
+    String fileSize;
+    String streamType;
 
-    public ContentPost(String postId, String postTitle, String createdAt, String postSize) {
-        this.postId = postId;
-        this.postTitle = postTitle;
+    public ContentPost(String title, String author, String createdAt, String fileSize, String streamType) {
+        this.title = title;
+        this.author = author;
         this.createdAt = createdAt;
-        this.postSize = postSize;
+        this.fileSize = fileSize;
+        this.streamType = streamType;
     }
 
-    public String getPostId() {
-        return postId;
+    public ContentPost() {
+
     }
 
-    public void setPostId(String postId) {
-        this.postId = postId;
+    public String getTitle() {
+        return title;
     }
 
-    public String getPostTitle() {
-        return postTitle;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
-    public void setPostTitle(String postTitle) {
-        this.postTitle = postTitle;
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
     public String getCreatedAt() {
@@ -38,21 +44,30 @@ public class ContentPost {
         this.createdAt = createdAt;
     }
 
-    public String getPostSize() {
-        return postSize;
+    public String getFileSize() {
+        return fileSize;
     }
 
-    public void setPostSize(String postSize) {
-        this.postSize = postSize;
+    public void setFileSize(String fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public String getStreamType() {
+        return streamType;
+    }
+
+    public void setStreamType(String streamType) {
+        this.streamType = streamType;
     }
 
     @Override
     public String toString() {
         return "ContentPost{" +
-                "postId='" + postId + '\'' +
-                ", postTitle='" + postTitle + '\'' +
+                "title='" + title + '\'' +
+                ", author='" + author + '\'' +
                 ", createdAt='" + createdAt + '\'' +
-                ", postSize='" + postSize + '\'' +
+                ", fileSize='" + fileSize + '\'' +
+                ", streamType='" + streamType + '\'' +
                 '}';
     }
 }

@@ -4,6 +4,9 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
@@ -23,18 +26,29 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferType;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.example.leonp.contentstreamer.models.ContentPost;
+
+import org.reactivestreams.Subscription;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import io.reactivex.Observable;
 
 public class HomeFeed extends AppCompatActivity {
 
     private static final String TAG = "HomeFeed";
 
     // constants
-    private static final int DOWLOAD_REQUEST_CODE = 1;
     private static final int WRITE_PERMISSION_REQUEST_CODE = 2;
 
     // widgets
@@ -46,6 +60,8 @@ public class HomeFeed extends AppCompatActivity {
     private ArrayList<ContentPost> postList;
     private ContentPostListAdapter mAdapter;
     private Context mContext;
+    private List<S3ObjectSummary> mSummaryList;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,8 +78,7 @@ public class HomeFeed extends AppCompatActivity {
         listView.setEmptyView(emptyView);
 
         postList = new ArrayList<>();
-//        mAdapter = new ContentPostListAdapter(this, R.layout.layout_postlistitem, postList);
-//        listView.setAdapter(mAdapter);
+        mSummaryList = new ArrayList<>();
 
         initDownloadButton();
 
@@ -72,42 +87,16 @@ public class HomeFeed extends AppCompatActivity {
             public void onClick(View v) {
                 Log.d(TAG, "onClick: Clicked get content button");
 
-                // TODO: get some content to display here
-                ContentPost samplePost1 = new ContentPost("1", "Blade Runner",
-                        "2017", "2 Hours");
-                ContentPost samplePost2 = new ContentPost("2", "Requiem For a Dream",
-                        "2000", "1 Hour 42 min");
-                ContentPost samplePost3 = new ContentPost("3", "Sicario",
-                        "2015", "121 minutes");
-                ContentPost samplePost4 = new ContentPost("4", "Harry Potter Series",
-                        "1997", "8 movies");
-                ContentPost samplePost5 = new ContentPost("5", "Black Hawk Down",
-                        "2001", "2 Hours");
-                ContentPost samplePost6 = new ContentPost("6", "Mr. Robot",
-                        "2014", "3 Seasons");
-                ContentPost samplePost7 = new ContentPost("7", "James Bond Series",
-                        "1956", "20 movies");
-                ContentPost samplePost8 = new ContentPost("8", "Ghostbusters",
-                        "1984", "1 Hour 47 minutes");
-                ContentPost samplePost9 = new ContentPost("9", "The Dark Knight",
-                        "2008", "2 Hours 32 minutes");
-
-                postList.add(samplePost1);
-                postList.add(samplePost2);
-                postList.add(samplePost3);
-                postList.add(samplePost4);
-                postList.add(samplePost5);
-                postList.add(samplePost6);
-                postList.add(samplePost7);
-                postList.add(samplePost8);
-                postList.add(samplePost9);
+                myDownloadTask task = new myDownloadTask();
+                task.execute();
+                //updateContentList();
 
                 mAdapter = new ContentPostListAdapter(mContext, R.layout.layout_postlistitem, postList);
                 listView.setAdapter(mAdapter);
                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        Log.d(TAG, "onItemClick: Clicked on: " + postList.get(position).getPostTitle());
+                        Log.d(TAG, "onItemClick: Clicked on: " + postList.get(position).getTitle());
                     }
                 });
             }
@@ -126,7 +115,6 @@ public class HomeFeed extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //return super.onOptionsItemSelected(item);
 
         switch (item.getItemId()) {
             case R.id.goToProfile:
@@ -138,6 +126,8 @@ public class HomeFeed extends AppCompatActivity {
             case R.id.goToLogout:
                 Log.d(TAG, "onOptionsItemSelected: Clicked to logout");
                 // TODO: logout from the session and return to sign in screen
+                myDownloadTask task = new myDownloadTask();
+                task.execute();
                 break;
             default:
                 Log.d(TAG, "onOptionsItemSelected: Somehow reached default switch...");
@@ -147,37 +137,11 @@ public class HomeFeed extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == DOWLOAD_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                //beginDownload();
-            }
-        }
-    }
-
-    private void requestWritePermission() {
-        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION_REQUEST_CODE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == WRITE_PERMISSION_REQUEST_CODE) {
-            downloadContent();
-        }
-    }
-
-    private void downloadContent() {
-
+    private File downloadPicture(String key) {
         TransferUtility transferUtility = AWSProvider.getTransferUtility(mContext);
+        String path = "public/" + key;
 
-        String path = "public/beer.png";
-        //String path = "public/example-image.png";
-        //File file = new File(Environment.getExternalStorageDirectory().toString() + "/" + path);
-        File file = new File("/storage/emulated/0/headshot.png");
-        Log.d(TAG, "beginDownload: Downloading with key: " + path +
-                " and file path: " + file.getAbsolutePath());
+        File file = new File("/storage/emulated/0/" + path);
         TransferObserver downloadObserver = transferUtility.download(Constants.s3Bucket, path, file);
 
         downloadObserver.setTransferListener(new TransferListener() {
@@ -209,24 +173,183 @@ public class HomeFeed extends AppCompatActivity {
             }
         });
 
-        // second Transfer technique
-        List<TransferObserver> observers = transferUtility.getTransfersWithType(TransferType.DOWNLOAD);
-        TransferListener listener = new ContentDownloadListener();
-        int counter = 0;
-        for (TransferObserver observer : observers) {
-            counter++;
-            Log.d(TAG, "onClick: Observer count: " + counter);
+        return file;
+    }
 
 
-            // Sets listeners to in progress transfers
-            if (TransferState.WAITING.equals(observer.getState())
-                    || TransferState.WAITING_FOR_NETWORK.equals(observer.getState())
-                    || TransferState.IN_PROGRESS.equals(observer.getState())) {
-                observer.setTransferListener(listener);
+    private void downloadContent() {
+
+        TransferUtility transferUtility = AWSProvider.getTransferUtility(mContext);
+        String path = "public/background.jpg";
+        File file = new File("/storage/emulated/0/" + path);
+        TransferObserver downloadObserver = transferUtility.download(Constants.s3Bucket, path, file);
+
+        downloadObserver.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                if (state == TransferState.COMPLETED) {
+                    Log.d(TAG, "onStateChanged: Transfer state completed");
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+
+                float percentDoneF = ((float) bytesCurrent / (float) bytesTotal) * 100;
+                int percentDone = (int) percentDoneF;
+
+                Log.d(TAG, "onProgressChanged: ID: " + id + "\n" +
+                        " Percent Done: " + percentDone + "\n" +
+                        "Total Bytes: " + bytesTotal + "\n" +
+                        "Current Bytes: " + bytesCurrent);
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+
+                Log.d(TAG, "onError: Error during transfer: " + ex.getMessage());
+
+                ex.printStackTrace();
+            }
+        });
+    }
+
+
+    private class myDownloadTask extends AsyncTask<String, String, List<S3ObjectSummary>> {
+
+        @Override
+        protected List<S3ObjectSummary> doInBackground(String... lists) {
+            return listAllS3Objects();
+        }
+
+        @Override
+        protected void onPostExecute(List<S3ObjectSummary> s3ObjectSummaries) {
+            super.onPostExecute(s3ObjectSummaries);
+            // TODO: populate the list view with the above summaries
+            mSummaryList = s3ObjectSummaries;
+            UpdateContentListTask task = new UpdateContentListTask();
+            task.execute();
+        }
+    }
+
+    private class UpdatePictureTask extends AsyncTask<String, String, Bitmap> {
+
+        @Override
+        protected Bitmap doInBackground(String... strings) {
+            for (String key : strings) {
+                AmazonS3Client client = AWSProvider.getS3Client(mContext);
+                S3Object object = client.getObject(Constants.s3Bucket, key);
+                S3ObjectInputStream stream = object.getObjectContent();
+                return BitmapFactory.decodeStream(stream);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+
+        }
+    }
+
+    private class UpdateContentListTask extends AsyncTask<String, String, String> {
+
+        @Override
+        protected String doInBackground(String... strings) {
+            updateContentList();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void updateContentList() {
+        if (mSummaryList.size() > 0) {
+            for (S3ObjectSummary summary : mSummaryList) {
+
+                ContentPost tempPost = new ContentPost();
+                tempPost.setFileSize(String.valueOf(summary.getSize()));
+                tempPost.setCreatedAt(String.valueOf(summary.getLastModified()));
+
+                String tempKey = summary.getKey();
+                ObjectMetadata metadata = AWSProvider
+                        .getS3Client(mContext)
+                        .getObjectMetadata(Constants.s3Bucket, tempKey);
+
+                try {
+                    Map<String, String> myMap = metadata.getUserMetadata();
+
+                    String title = myMap.get("title");
+                    String author = myMap.get("author");
+                    String streamType = myMap.get("streamtype");
+                    tempPost.setTitle(title);
+                    tempPost.setAuthor(author);
+                    tempPost.setStreamType(streamType);
+
+                    if (streamType.equals("picture")) {
+                        UpdatePictureTask task = new UpdatePictureTask();
+                        task.execute(tempKey);
+                    }
+
+                } catch (Exception e) {
+                    Log.d(TAG, "listAllS3Objects: Ran into exception: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                postList.add(tempPost);
+            }
+        }
+    }
+
+    private List<S3ObjectSummary> listAllS3Objects() {
+
+        AmazonS3Client client = AWSProvider.getS3Client(mContext);
+        Log.d(TAG, "listAllS3Objects: Client is: " + client);
+
+        ListObjectsRequest listObjectsRequest =
+                    new ListObjectsRequest()
+                            .withBucketName(Constants.s3Bucket)
+                            .withPrefix("public/");
+
+
+
+        //ObjectListing listing = AWSProvider.getS3Client(mContext).listObjects(Constants.s3Bucket);
+        ObjectListing listing = AWSProvider.getS3Client(mContext).listObjects(listObjectsRequest);
+        List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+
+        for (S3ObjectSummary summary : summaries) {
+
+            Log.d(TAG, "putS3DataInListview: Found Object: " + summary.getKey() +
+                    " with size: " + summary.getSize() +
+                    " \n\tFrom Bucket name: " + summary.getBucketName());
+
+            String tempKey = summary.getKey();
+            ObjectMetadata metadata = AWSProvider
+                    .getS3Client(mContext)
+                    .getObjectMetadata(Constants.s3Bucket, tempKey);
+
+            try {
+                Map<String, String> myMap = metadata.getUserMetadata();
+
+                String title = myMap.get("title");
+                String author = myMap.get("author");
+                String streamType = myMap.get("streamtype");
+
+                Log.d(TAG, "listAllS3Objects: Object has metadata title of: " + title +
+                        " \n\tAuthor: " + author +
+                        " \n\tStream Type: " + streamType);
+            } catch (Exception e) {
+                Log.d(TAG, "listAllS3Objects: Ran into exception: " + e.getMessage());
+                e.printStackTrace();
             }
 
         }
 
+        return summaries;
     }
 
     private void initDownloadButton() {
@@ -248,21 +371,20 @@ public class HomeFeed extends AppCompatActivity {
         });
     }
 
-    private class ContentDownloadListener implements TransferListener {
 
-        @Override
-        public void onStateChanged(int id, TransferState state) {
+    /**
+     * REQUESTING PERMISSIONS (consider putting that in its own class especially if more permissions will be needed)
+     */
 
-        }
+    private void requestWritePermission() {
+        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION_REQUEST_CODE);
+    }
 
-        @Override
-        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-
-        }
-
-        @Override
-        public void onError(int id, Exception ex) {
-
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == WRITE_PERMISSION_REQUEST_CODE) {
+            downloadContent();
         }
     }
 }
