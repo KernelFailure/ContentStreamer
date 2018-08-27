@@ -33,6 +33,10 @@ Class Structure
     - Profile
         - Users can view/edit basic profile info (username, email, profile picture)
         - Users can upload content stored on their phone
+	
+    - Authenticator Activity
+        - This class handles the login/sign up flows and incorporates the basic UI provided by AWS
+	- Also modify the AuthUIConfiguration to customize the login UI
         
     - List Adapters and models
         - We need to build models of the posts we create (could all be the same or different for different content formats)
@@ -42,23 +46,12 @@ Class Structure
 
 Extending AWS Project - Content Streamer
     - Find a cooler icon
-
-    - Right now, the S3 query and the file placement path is hard coded
-        - Allow for dynamic queries
-        - Make available files visible so users don't have to guess/know the paths they're looking for
-        - For now, users should just be able to select a file that is displayed for download.  Adding search inputs will come later
-
-    - Right now we have a list view with a custom post adapter in our home feed
-        - Might have to update the adapter and model post class depending on the type of info we get from our downloads
-        - We should be able to get the file name, file size from any S3 download
-            - do some research on all the other info you can get from a standard S3 download
-            - This might be where DynamoDB can help out, storing and serving meta data about our files (date, genre, author, likes, etc.)
-                - Have to figure out how to work the Lambda/AppSync functionalities in order to simplify our read/write methods
-
-
-How To:
-
-- set up the listview with the available content on S3
-    - We should still have the List<ContentPost> variable.  After updating the ContentPost model class that list should still be good to go
-    - We'd have to check the sample app on AWS and the way that they looped through the available files
-        - Looks like they set up a list of TransferObservers and utilized hash maps 
+    
+    - Right now we have a sign in/sign up flow established
+        - Add more sign up options (facebook, google, etc.)
+    
+    - Our home feed displays a list of posts, including the title, author, modified date, file size and picture if the object in the bucket is a picture
+    
+    - I would like to start using the DynamoDB functions to store post info. Right now all the necessary info is stored in object metadata in S3.  Consider switching the post model to Dynamo and saving the key/path to an S3 object along with all the other necessary post info
+    
+    - Add a search bar to the top of the home feed
