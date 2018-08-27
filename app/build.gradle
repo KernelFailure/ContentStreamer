@@ -4,7 +4,7 @@ android {
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.example.leonp.contentstreamer"
-        minSdkVersion 15
+        minSdkVersion 23
         targetSdkVersion 27
         versionCode 1
         versionName "1.0"
@@ -32,6 +32,11 @@ dependencies {
     // AWS Cognito
     implementation 'com.amazonaws:aws-android-sdk-cognito:2.6.+'
     //implementation ('com.amazonaws:aws-android-sdk-mobile-client:2.6.+@aar') { transitive = true }
+
+    // AWS Sign in SDKs
+    implementation 'com.amazonaws:aws-android-sdk-auth-ui:2.6.+@aar'
+    implementation 'com.amazonaws:aws-android-sdk-auth-userpools:2.6.+@aar'
+    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.+'
 
     // AWS S3 (Simple Storage Service)
     implementation 'com.amazonaws:aws-android-sdk-s3:2.6.+'

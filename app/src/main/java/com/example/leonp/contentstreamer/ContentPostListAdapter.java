@@ -72,22 +72,29 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
         holder.tvCreatedAt.setText(getItem(position).getCreatedAt());
         holder.tvFileSize.setText(getItem(position).getFileSize());
 
-        int imgRes = R.drawable.ic_error;
+        holder.ivStreamType.setImageResource(R.drawable.ic_error);
         String streamType = getItem(position).getStreamType();
 
         switch (streamType) {
             case "sound":
-                imgRes = R.drawable.ic_music;
+
+                holder.ivStreamType.setImageResource(R.drawable.ic_music);
                 break;
             case "picture":
-                imgRes = R.drawable.ic_image;
+
+                try {
+                    holder.ivStreamType.setImageBitmap(getItem(position).getPostBitmap());
+                } catch (NullPointerException e) {
+                    Log.e(TAG, "getView: NullPointerException: " + e.getMessage());
+                    e.printStackTrace();
+                    holder.ivStreamType.setImageResource(R.drawable.ic_image);
+                }
                 break;
             default:
                 Log.d(TAG, "getView: Couldn't resolve stream type: " + streamType);
                 break;
         }
 
-        holder.ivStreamType.setImageResource(imgRes);
 
         return convertView;
     }

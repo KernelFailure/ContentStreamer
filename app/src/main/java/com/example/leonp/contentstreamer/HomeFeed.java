@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
@@ -54,10 +55,12 @@ public class HomeFeed extends AppCompatActivity {
     // widgets
     private ListView listView;
     private Button btnGetContent;
-    private Button btnDownloadFromS3;
+    private RelativeLayout relProgressBar;
+    private View mEmptyView;
+
 
     // vars
-    private ArrayList<ContentPost> postList;
+    private List<ContentPost> mPostList;
     private ContentPostListAdapter mAdapter;
     private Context mContext;
     private List<S3ObjectSummary> mSummaryList;
@@ -68,40 +71,119 @@ public class HomeFeed extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_feed);
 
-        listView = (ListView) findViewById(R.id.listView);
-        btnGetContent = (Button) findViewById(R.id.btnGetContent);
-        btnDownloadFromS3 = (Button) findViewById(R.id.btnDownloadFromS3);
-
         mContext = this;
 
-        View emptyView = findViewById(R.id.emptyView);
-        listView.setEmptyView(emptyView);
+        btnGetContent = (Button) findViewById(R.id.btnGetContent);
+        relProgressBar = (RelativeLayout) findViewById(R.id.relProgressBar);
+        relProgressBar.setVisibility(View.INVISIBLE);
 
-        postList = new ArrayList<>();
+        listView = (ListView) findViewById(R.id.listView);
+        mEmptyView = findViewById(R.id.emptyView);
+        listView.setEmptyView(mEmptyView);
+
+        mPostList = new ArrayList<>();
         mSummaryList = new ArrayList<>();
 
-        initDownloadButton();
+        mAdapter = new ContentPostListAdapter(mContext, R.layout.layout_postlistitem, mPostList);
+        listView.setAdapter(mAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(TAG, "onItemClick: Clicked on: " + mPostList.get(position).getTitle());
+            }
+        });
+
+        initGetContentButton();
+
+    }
+
+    private void initGetContentButton() {
 
         btnGetContent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "onClick: Clicked get content button");
-
-                myDownloadTask task = new myDownloadTask();
+                Log.d(TAG, "onClick: Clicked on get content button");
+                GetContentTask task = new GetContentTask();
                 task.execute();
-                //updateContentList();
-
-                mAdapter = new ContentPostListAdapter(mContext, R.layout.layout_postlistitem, postList);
-                listView.setAdapter(mAdapter);
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        Log.d(TAG, "onItemClick: Clicked on: " + postList.get(position).getTitle());
-                    }
-                });
             }
         });
+
     }
+
+    private class GetContentTask extends AsyncTask<String, String, List<ContentPost>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            //listView.setEmptyView(null);
+            mPostList.clear();
+            mAdapter.notifyDataSetChanged();
+            mEmptyView.setVisibility(View.INVISIBLE);
+            relProgressBar.setVisibility(View.VISIBLE);
+            Log.d(TAG, "onPreExecute: Post List Size: " + mPostList.size());
+        }
+
+        @Override
+        protected List<ContentPost> doInBackground(String... strings) {
+
+            List<ContentPost> postList = new ArrayList<>();
+
+            AmazonS3Client client = AWSProvider.getS3Client(mContext);
+            ListObjectsRequest request = new ListObjectsRequest()
+                    .withBucketName(Constants.s3Bucket)
+                    .withPrefix("public/");
+
+            ObjectListing listing = client.listObjects(request);
+            List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+
+            for (S3ObjectSummary summary : summaries) {
+                ContentPost tempPost = new ContentPost();
+                tempPost.setCreatedAt(String.valueOf(summary.getLastModified()));
+                tempPost.setFileSize(String.valueOf(summary.getSize()));
+                ObjectMetadata metadata = client.getObjectMetadata(Constants.s3Bucket, summary.getKey());
+                Map<String, String> map = metadata.getUserMetadata();
+                try {
+                    String title = map.get(Constants.metaKeyTitle);
+                    String author = map.get(Constants.metaKeyAuthor);
+                    String streamType = map.get(Constants.metaKeyStreamType);
+
+                    tempPost.setTitle(title);
+                    tempPost.setAuthor(author);
+                    tempPost.setStreamType(streamType);
+
+                    if (streamType.equals(Constants.metaStreamTypePicture)) {
+                        tempPost.setPostBitmap(BitmapFactory.
+                                decodeStream(client.getObject(Constants.s3Bucket, summary.getKey()).getObjectContent()));
+                    }
+
+                } catch (Exception e) {
+                    Log.e(TAG, "doInBackground: Exception: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                postList.add(tempPost);
+            }
+
+            return postList;
+        }
+
+
+        @Override
+        protected void onPostExecute(List<ContentPost> postList) {
+            super.onPostExecute(postList);
+            Log.d(TAG, "onPostExecute: Finished task.  Post list is: " + postList);
+            mPostList.addAll(postList);
+            mAdapter.notifyDataSetChanged();
+            relProgressBar.setVisibility(View.INVISIBLE);
+            Log.d(TAG, "onPostExecute: Post List Size: " + mPostList.size());
+        }
+    }
+
+    /**
+     *
+     * Options Menu
+     *
+     */
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -300,7 +382,7 @@ public class HomeFeed extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                postList.add(tempPost);
+                //postList.add(tempPost);
             }
         }
     }
@@ -352,24 +434,6 @@ public class HomeFeed extends AppCompatActivity {
         return summaries;
     }
 
-    private void initDownloadButton() {
-        btnDownloadFromS3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "onClick: Clicked Download from S3 Button");
-
-                //startActivityForResult();
-                if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    requestWritePermission();
-                } else {
-
-                    downloadContent();
-
-                }
-            }
-        });
-    }
 
 
     /**

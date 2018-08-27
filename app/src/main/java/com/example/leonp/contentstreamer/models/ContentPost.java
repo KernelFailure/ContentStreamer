@@ -1,19 +1,23 @@
 package com.example.leonp.contentstreamer.models;
 
+import android.graphics.Bitmap;
+
 public class ContentPost {
 
-    String title;
-    String author;
-    String createdAt;
-    String fileSize;
-    String streamType;
+    private String title;
+    private String author;
+    private String createdAt;
+    private String fileSize;
+    private String streamType;
+    private Bitmap postBitmap;
 
-    public ContentPost(String title, String author, String createdAt, String fileSize, String streamType) {
+    public ContentPost(String title, String author, String createdAt, String fileSize, String streamType, Bitmap postBitmap) {
         this.title = title;
         this.author = author;
         this.createdAt = createdAt;
         this.fileSize = fileSize;
         this.streamType = streamType;
+        this.postBitmap = postBitmap;
     }
 
     public ContentPost() {
@@ -60,6 +64,14 @@ public class ContentPost {
         this.streamType = streamType;
     }
 
+    public Bitmap getPostBitmap() {
+        return postBitmap;
+    }
+
+    public void setPostBitmap(Bitmap postBitmap) {
+        this.postBitmap = postBitmap;
+    }
+
     @Override
     public String toString() {
         return "ContentPost{" +
@@ -68,6 +80,7 @@ public class ContentPost {
                 ", createdAt='" + createdAt + '\'' +
                 ", fileSize='" + fileSize + '\'' +
                 ", streamType='" + streamType + '\'' +
+                ", postBitmap=" + postBitmap +
                 '}';
     }
 }

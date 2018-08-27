@@ -6,6 +6,7 @@ import android.webkit.DownloadListener;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobile.auth.core.IdentityManager;
+import com.amazonaws.mobile.auth.userpools.CognitoUserPoolsSignInProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
@@ -30,12 +31,7 @@ public class AWSProvider {
         this.context = context;
         AWSConfiguration configuration = new AWSConfiguration(context);
 
-        IdentityManager identityManager = new IdentityManager(context, configuration);
-
-        AmazonS3Client client = null;
-
-
-
+        //AmazonS3Client client = null;
     }
 
     private static CognitoCachingCredentialsProvider getCognitoCredentials(Context context) {
@@ -86,5 +82,18 @@ public class AWSProvider {
     }
 
 
+    public static IdentityManager getIdentityManager(Context context) {
+
+        IdentityManager identityManager = new IdentityManager(context, getAWSConfiguration(context));
+        IdentityManager.setDefaultIdentityManager(identityManager);
+        identityManager.addSignInProvider(CognitoUserPoolsSignInProvider.class);
+
+        return IdentityManager.getDefaultIdentityManager();
+
+    }
+
+    private static AWSConfiguration getAWSConfiguration(Context context) {
+        return new AWSConfiguration(context);
+    }
 
 }

@@ -17,21 +17,14 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="10dp"
+        android:padding="5dp">
 
         <Button
             android:id="@+id/btnGetContent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Get Content"/>
-
-        <Button
-            android:id="@+id/btnDownloadFromS3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Download from S3"
-            android:layout_toRightOf="@id/btnGetContent"
-            android:layout_marginLeft="10dp"/>
 
     </RelativeLayout>
 
@@ -57,6 +50,26 @@
             android:layout_below="@+id/mainImage"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="15dp"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/relProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="100dp"
+            android:layout_height="100dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Refreshing..."
+            android:layout_below="@id/progressBar"
+            android:layout_centerHorizontal="true"/>
 
     </RelativeLayout>
 
