@@ -1,6 +1,8 @@
 package com.example.leonp.contentstreamer;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -10,13 +12,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
 import com.example.leonp.contentstreamer.models.ContentPost;
+import com.example.leonp.contentstreamer.models.PostsDO;
 
 import java.util.List;
+import java.util.Map;
 
-public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
+public class ContentPostListAdapter extends ArrayAdapter<PostsDO> {
 
     private static final String TAG = "ContentPostListAdapter";
 
@@ -25,7 +39,7 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
     private Context mContext;
     private int mResource;
 
-    public ContentPostListAdapter(@NonNull Context context, int resource, @NonNull List<ContentPost> objects) {
+    public ContentPostListAdapter(@NonNull Context context, int resource, @NonNull List<PostsDO> objects) {
         super(context, resource, objects);
 
         mContext = context;
@@ -40,6 +54,7 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
         TextView tvCreatedAt;
         TextView tvFileSize;
         ImageView ivStreamType;
+        ProgressBar pictureProgressBar;
     }
 
 
@@ -59,6 +74,7 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
             holder.tvCreatedAt = (TextView) convertView.findViewById(R.id.tvCreatedAt);
             holder.tvFileSize = (TextView) convertView.findViewById(R.id.tvFileSize);
             holder.ivStreamType = (ImageView) convertView.findViewById(R.id.ivStreamType);
+            holder.pictureProgressBar = (ProgressBar) convertView.findViewById(R.id.pictureProgressBar);
 
 
             convertView.setTag(holder);
@@ -70,9 +86,9 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
         holder.tvTitle.setText(getItem(position).getTitle());
         holder.tvAuthor.setText(getItem(position).getAuthor());
         holder.tvCreatedAt.setText(getItem(position).getCreatedAt());
-        holder.tvFileSize.setText(getItem(position).getFileSize());
+        holder.pictureProgressBar.setVisibility(View.VISIBLE);
 
-        holder.ivStreamType.setImageResource(R.drawable.ic_error);
+        //holder.ivStreamType.setImageResource(R.drawable.ic_error);
         String streamType = getItem(position).getStreamType();
 
         switch (streamType) {
@@ -83,7 +99,38 @@ public class ContentPostListAdapter extends ArrayAdapter<ContentPost> {
             case "picture":
 
                 try {
-                    holder.ivStreamType.setImageBitmap(getItem(position).getPostBitmap());
+
+                    Log.d(TAG, "getView: Trying to set picture");
+
+                    Observable<Bitmap> s3ObjectObservable = Observable.create(emittedBitmap -> {
+
+                        S3Object object = AWSProvider.getS3Client(mContext)
+                                .getObject(Constants.s3Bucket, getItem(position).getImagePath());
+                        ObjectMetadata metadata = object.getObjectMetadata();
+                        Map<String, String> userMetaData = metadata.getUserMetadata();
+                        userMetaData.get)
+                        //AWSProvider.getS3Client(mContext).get
+                        Bitmap bitmap = BitmapFactory.decodeStream(object.getObjectContent());
+
+                        emittedBitmap.onNext(bitmap);
+                    });
+
+                    Disposable subscribe = s3ObjectObservable.observeOn(AndroidSchedulers.mainThread())
+                            .subscribeOn(Schedulers.io())
+                            .subscribe(emittedBitmap -> {
+                                Log.d(TAG, "getView: Trying set bitmap: " + emittedBitmap.toString());
+                                holder.ivStreamType.setImageBitmap(emittedBitmap);
+                                holder.pictureProgressBar.setVisibility(View.INVISIBLE);
+                });
+
+                    Log.d(TAG, "getView: Finished subscribing: " + subscribe.toString());
+
+                    CompositeDisposable disposable = new CompositeDisposable();
+                    disposable.add(subscribe);
+
+//                    S3Object object = AWSProvider.getS3Client(mContext).getObject(
+//                            Constants.s3Bucket, getItem(position).getImagePath());
+//                    holder.ivStreamType.setImageBitmap(BitmapFactory.decodeStream(object.getObjectContent()));
                 } catch (NullPointerException e) {
                     Log.e(TAG, "getView: NullPointerException: " + e.getMessage());
                     e.printStackTrace();

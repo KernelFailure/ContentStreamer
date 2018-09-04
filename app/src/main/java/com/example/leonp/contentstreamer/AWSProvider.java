@@ -4,17 +4,20 @@ import android.content.Context;
 import android.util.Log;
 import android.webkit.DownloadListener;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobile.auth.core.IdentityManager;
 import com.amazonaws.mobile.auth.userpools.CognitoUserPoolsSignInProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobile.config.AWSConfiguration;
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferType;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import java.util.List;
@@ -94,6 +97,19 @@ public class AWSProvider {
 
     private static AWSConfiguration getAWSConfiguration(Context context) {
         return new AWSConfiguration(context);
+    }
+
+    public static DynamoDBMapper getDynamoDBMapper(Context context) {
+
+        AWSCredentialsProvider provider = IdentityManager.getDefaultIdentityManager().getCredentialsProvider();
+        AmazonDynamoDBClient dbClient = new AmazonDynamoDBClient(provider);
+        DynamoDBMapper dbMapper = DynamoDBMapper.builder()
+                .awsConfiguration(getAWSConfiguration(context))
+                .dynamoDBClient(dbClient)
+                .build();
+
+        return dbMapper;
+
     }
 
 }

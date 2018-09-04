@@ -20,11 +20,13 @@
         android:layout_marginBottom="10dp"
         android:padding="5dp">
 
+
         <Button
-            android:id="@+id/btnGetContent"
+            android:id="@+id/btnMakeDbCall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Get Content"/>
+            android:text="Make DB Call"
+            android:layout_marginLeft="5dp"/>
 
     </RelativeLayout>
 

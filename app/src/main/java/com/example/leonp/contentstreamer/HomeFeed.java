@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.MatrixCursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -22,6 +23,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
@@ -35,15 +38,21 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.example.leonp.contentstreamer.models.ContentPost;
+import com.example.leonp.contentstreamer.models.PostsDO;
 
 import org.reactivestreams.Subscription;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class HomeFeed extends AppCompatActivity {
 
@@ -54,16 +63,48 @@ public class HomeFeed extends AppCompatActivity {
 
     // widgets
     private ListView listView;
-    private Button btnGetContent;
+    //private Button btnGetContent;
     private RelativeLayout relProgressBar;
     private View mEmptyView;
+    private Button btnMakeDbCall;
 
 
     // vars
-    private List<ContentPost> mPostList;
+    private List<PostsDO> mPostList;
     private ContentPostListAdapter mAdapter;
     private Context mContext;
     private List<S3ObjectSummary> mSummaryList;
+
+    // Observables
+    private Observable<List<PostsDO>> mPostListObservable = Observable.create(postList -> {
+        postList.onNext(callToDB());
+    });
+
+    private List<PostsDO> callToDB() {
+
+        String[] projection = {
+                "userId",
+                "title",
+                "author",
+                "createdAt",
+                "streamType",
+                "imagePath"
+        };
+
+        DynamoDBMapper mapper = AWSProvider.getDynamoDBMapper(mContext);
+        MatrixCursor cursor = new MatrixCursor(projection);
+
+        PostsDO template = new PostsDO();
+        template.setUserId("1");
+
+        DynamoDBQueryExpression<PostsDO> queryExpression = new DynamoDBQueryExpression<PostsDO>()
+                .withHashKeyValues(template);
+
+        List<PostsDO> dbPostList = mapper.query(PostsDO.class, queryExpression);
+
+        return dbPostList;
+
+    }
 
 
     @Override
@@ -73,7 +114,8 @@ public class HomeFeed extends AppCompatActivity {
 
         mContext = this;
 
-        btnGetContent = (Button) findViewById(R.id.btnGetContent);
+        //btnGetContent = (Button) findViewById(R.id.btnGetContent);
+        btnMakeDbCall = (Button) findViewById(R.id.btnMakeDbCall);
         relProgressBar = (RelativeLayout) findViewById(R.id.relProgressBar);
         relProgressBar.setVisibility(View.INVISIBLE);
 
@@ -93,20 +135,74 @@ public class HomeFeed extends AppCompatActivity {
             }
         });
 
-        initGetContentButton();
+        // initGetContentButton();
+        initMakeDbCallButton();
 
+    }
+
+    private void getDBObjects(List<PostsDO> postList) {
+
+        Iterator<PostsDO> iterator = postList.iterator();
+//        for (PostsDO tempPost: iterator
+//             ) {
+//
+//        }
+        Log.d(TAG, "getDBObjects: Post List size: " + postList.size());
+        while (iterator.hasNext()) {
+
+            PostsDO tempPost = iterator.next();
+            Log.d(TAG, "onClick: In DB found title: " + tempPost.getTitle());
+            Log.d(TAG, "onClick: In DB found author: " + tempPost.getAuthor());
+            Log.d(TAG, "onClick: In DB found image path: " + tempPost.getImagePath());
+            Log.d(TAG, "onClick: In DB found created at: " + tempPost.getCreatedAt());
+            Log.d(TAG, "onClick: In DB found stream type: " + tempPost.getStreamType());
+
+        }
+
+        Log.d(TAG, "getDBObjects: Done with while loop");
+
+    }
+
+    private void initMakeDbCallButton() {
+
+        btnMakeDbCall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.setEnabled(false);
+
+                mPostList.clear();
+                mAdapter.notifyDataSetChanged();
+                mEmptyView.setVisibility(View.INVISIBLE);
+                relProgressBar.setVisibility(View.VISIBLE);
+
+                CompositeDisposable disposable = new CompositeDisposable();
+
+                Disposable subscribe = mPostListObservable.observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(postList -> {
+                            mPostList.addAll(postList);
+                            mAdapter.notifyDataSetChanged();
+                            relProgressBar.setVisibility(View.INVISIBLE);
+                            Log.d(TAG, "onClick: Finished post list size is: " + mPostList.size());
+                            v.setEnabled(true);
+                        });
+
+                disposable.add(subscribe);
+
+            }
+        });
     }
 
     private void initGetContentButton() {
 
-        btnGetContent.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "onClick: Clicked on get content button");
-                GetContentTask task = new GetContentTask();
-                task.execute();
-            }
-        });
+//        btnGetContent.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Log.d(TAG, "onClick: Clicked on get content button");
+//                GetContentTask task = new GetContentTask();
+//                task.execute();
+//            }
+//        });
 
     }
 
@@ -172,7 +268,7 @@ public class HomeFeed extends AppCompatActivity {
         protected void onPostExecute(List<ContentPost> postList) {
             super.onPostExecute(postList);
             Log.d(TAG, "onPostExecute: Finished task.  Post list is: " + postList);
-            mPostList.addAll(postList);
+            //mPostList.addAll(postList);
             mAdapter.notifyDataSetChanged();
             relProgressBar.setVisibility(View.INVISIBLE);
             Log.d(TAG, "onPostExecute: Post List Size: " + mPostList.size());

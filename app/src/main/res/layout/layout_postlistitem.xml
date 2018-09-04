@@ -45,9 +45,15 @@
             android:id="@+id/ivStreamType"
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:src="@drawable/ic_error"
             android:layout_centerHorizontal="true"
             />
+
+        <ProgressBar
+            android:id="@+id/pictureProgressBar"
+            android:visibility="invisible"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"/>
 
         <TextView
             android:id="@+id/tvFileSize"

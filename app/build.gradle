@@ -16,6 +16,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // need this lang version to use lambda functions
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -40,6 +46,10 @@ dependencies {
 
     // AWS S3 (Simple Storage Service)
     implementation 'com.amazonaws:aws-android-sdk-s3:2.6.+'
+
+    // Amazon DynamoDB for NoSQL tables
+    implementation 'com.amazonaws:aws-android-sdk-ddb:2.6.+'
+    implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.6.+'
 
     // RXJava2
     implementation "io.reactivex.rxjava2:rxjava:2.2.1"
