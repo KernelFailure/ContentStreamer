@@ -58,6 +58,7 @@ public class AuthenticatorActivity extends Activity {
         AuthUIConfiguration configuration = new AuthUIConfiguration.Builder()
                 .userPools(true)
                 .logoResId(R.drawable.networking) // Change the logo
+                //.backgroundColor((int) Long.parseLong("324A5E", 16))
                 .build();
         SignInActivity.startSignInActivity(mContext, configuration);
         AuthenticatorActivity.this.finish();

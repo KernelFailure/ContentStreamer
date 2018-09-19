@@ -11,10 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@DynamoDBTable(tableName = "contentstreamer-mobilehub-1377632671-posts")
+@DynamoDBTable(tableName = "contentstreamer-mobilehub-1377632671-posts2")
 
-public class PostsDO {
+public class Posts2DO {
     private String _userId;
+    private String _postId;
     private String _author;
     private String _createdAt;
     private String _imagePath;
@@ -29,6 +30,15 @@ public class PostsDO {
 
     public void setUserId(final String _userId) {
         this._userId = _userId;
+    }
+    @DynamoDBRangeKey(attributeName = "postId")
+    @DynamoDBAttribute(attributeName = "postId")
+    public String getPostId() {
+        return _postId;
+    }
+
+    public void setPostId(final String _postId) {
+        this._postId = _postId;
     }
     @DynamoDBAttribute(attributeName = "author")
     public String getAuthor() {

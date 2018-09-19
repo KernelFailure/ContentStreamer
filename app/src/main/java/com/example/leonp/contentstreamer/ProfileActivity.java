@@ -14,20 +14,28 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.bumptech.glide.Glide;
+import com.example.leonp.contentstreamer.models.Posts2DO;
+
+import java.util.concurrent.Executor;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class ProfileActivity extends Activity {
 
     private static final String TAG = "ProfileActivity";
 
     // widgets
-    private TextView tvPlaceholder;
-    private Button btnGetPicture;
-    private ImageView ivProfilePicture;
-    private RelativeLayout relProgressBar;
+    private Button btnInsertDummyData;
 
     // vars
     private Context mContext;
@@ -39,60 +47,41 @@ public class ProfileActivity extends Activity {
 
         mContext = this;
 
-        tvPlaceholder = (TextView) findViewById(R.id.tvPlaceholder);
-        btnGetPicture = (Button) findViewById(R.id.btnGetPicture);
-        ivProfilePicture = (ImageView) findViewById(R.id.ivProfilePicture);
-        relProgressBar = (RelativeLayout) findViewById(R.id.relProgressBar);
+        btnInsertDummyData = (Button) findViewById(R.id.btnInsertDummyData);
 
-        relProgressBar.setVisibility(View.INVISIBLE);
-
-        initGetPictureButton();
-    }
-
-    private void initGetPictureButton() {
-
-        btnGetPicture.setOnClickListener(new View.OnClickListener() {
+        btnInsertDummyData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "initGetPictureButton: Clicked get picture button");
+                Log.d(TAG, "onClick: Clicked on insert dummy data");
+                v.setEnabled(false);
 
-                GetPictureTask task = new GetPictureTask();
-                task.execute();
+                // TODO: make this button instead do an api call using retrofit to AWS API gateway
+
+                Observable<Void> observable = Observable.create(item -> insertIntoDb());
+                Disposable subscribe = observable.observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(item -> v.setEnabled(true));
+                CompositeDisposable disposable = new CompositeDisposable();
+                disposable.add(subscribe);
+
+
             }
         });
+
     }
 
-    private class GetPictureTask extends AsyncTask<String, String, Bitmap> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            tvPlaceholder.setVisibility(View.INVISIBLE);
-            relProgressBar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected Bitmap doInBackground(String... strings) {
-
-
-            AmazonS3Client client = AWSProvider.getS3Client(mContext);
-            S3Object object = client.getObject(Constants.s3Bucket, "public/hikers_watch_icon.jpg");
-            S3ObjectInputStream stream = object.getObjectContent();
-
-            return BitmapFactory.decodeStream(stream);
-        }
-
-        @Override
-        protected void onPostExecute(Bitmap bitmap) {
-            super.onPostExecute(bitmap);
-
-            relProgressBar.setVisibility(View.INVISIBLE);
-            if (bitmap != null) {
-                ivProfilePicture.setImageBitmap(bitmap);
-                return;
-            }
-            tvPlaceholder.setVisibility(View.VISIBLE);
-            Log.d(TAG, "onPostExecute: Bitmap was null");
-        }
+    private void insertIntoDb() {
+        DynamoDBMapper mapper = AWSProvider.getDynamoDBMapper(mContext);
+        Posts2DO post = new Posts2DO();
+        post.setUserId(AWSProvider.getIdentityManager(mContext).getCachedUserID());
+        post.setTitle("My First Dummy Post");
+        post.setAuthor("Harry Potter");
+        post.setCreatedAt("Today");
+        post.setImagePath("fakePath");
+        //post.setPostId();
+        post.setStreamType("audio");
+        mapper.save(post);
     }
+
+
 }

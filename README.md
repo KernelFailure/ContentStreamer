@@ -45,13 +45,11 @@ Class Structure
 	
 
 Extending AWS Project - Content Streamer
-    - Find a cooler icon
     
     - Right now we have a sign in/sign up flow established
         - Add more sign up options (facebook, google, etc.)
-    
-    - Our home feed displays a list of posts, including the title, author, modified date, file size and picture if the object in the bucket is a picture
-    
-    - I would like to start using the DynamoDB functions to store post info. Right now all the necessary info is stored in object metadata in S3.  Consider switching the post model to Dynamo and saving the key/path to an S3 object along with all the other necessary post info
-    
+
     - Add a search bar to the top of the home feed
+
+    - Current call structure is to connect to DynamoDB, which stores the file path for S3
+        - Instead we want to use Retrofit to make API calls to AWS API services 

@@ -19,7 +19,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.example.leonp.contentstreamer.models.ContentPost;
-import com.example.leonp.contentstreamer.models.PostsDO;
+import com.example.leonp.contentstreamer.models.Posts2DO;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class ContentPostListAdapter extends ArrayAdapter<PostsDO> {
+public class ContentPostListAdapter extends ArrayAdapter<Posts2DO> {
 
     private static final String TAG = "ContentPostListAdapter";
 
@@ -39,7 +39,7 @@ public class ContentPostListAdapter extends ArrayAdapter<PostsDO> {
     private Context mContext;
     private int mResource;
 
-    public ContentPostListAdapter(@NonNull Context context, int resource, @NonNull List<PostsDO> objects) {
+    public ContentPostListAdapter(@NonNull Context context, int resource, @NonNull List<Posts2DO> objects) {
         super(context, resource, objects);
 
         mContext = context;
@@ -108,7 +108,7 @@ public class ContentPostListAdapter extends ArrayAdapter<PostsDO> {
                                 .getObject(Constants.s3Bucket, getItem(position).getImagePath());
                         ObjectMetadata metadata = object.getObjectMetadata();
                         Map<String, String> userMetaData = metadata.getUserMetadata();
-                        userMetaData.get)
+//                        userMetaData.get)
                         //AWSProvider.getS3Client(mContext).get
                         Bitmap bitmap = BitmapFactory.decodeStream(object.getObjectContent());
 
