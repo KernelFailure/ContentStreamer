@@ -52,4 +52,4 @@ Extending AWS Project - Content Streamer
     - Add a search bar to the top of the home feed
 
     - Current call structure is to connect to DynamoDB, which stores the file path for S3
-        - Instead we want to use Retrofit to make API calls to AWS API services 
+        - Instead we want to use Retrofit to make API calls to AWS API services

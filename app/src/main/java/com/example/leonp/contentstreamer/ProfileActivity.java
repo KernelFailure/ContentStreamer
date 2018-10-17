@@ -14,6 +14,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.amazonaws.mobile.config.AWSConfiguration;
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -56,6 +58,14 @@ public class ProfileActivity extends Activity {
                 v.setEnabled(false);
 
                 // TODO: make this button instead do an api call using retrofit to AWS API gateway
+
+                AWSConfiguration configuration = new AWSConfiguration(mContext);
+                AWSAppSyncClient client = AWSAppSyncClient
+                        .builder()
+                        .context(mContext)
+                        .awsConfiguration(configuration)
+                        .build();
+
 
                 Observable<Void> observable = Observable.create(item -> insertIntoDb());
                 Disposable subscribe = observable.observeOn(AndroidSchedulers.mainThread())

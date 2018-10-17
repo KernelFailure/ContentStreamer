@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="5dp"
+    android:paddingRight="5dp"
+    android:paddingTop="15dp">
+
+    <EditText
+        android:id="@+id/etInputTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Title of your Post"
+        android:padding="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:textAlignment="center"/>
+
+    <RelativeLayout
+        android:id="@+id/relOne"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/etInputTitle"
+        android:layout_marginTop="10dp">
+
+        <ImageView
+            android:id="@+id/ivContentThumbnail"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/background_thumbnail"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_add" />
+
+        <TextView
+            android:id="@+id/tvAddContentPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@id/ivContentThumbnail"
+            android:text="Add some content to your post"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:layout_margin="10dp"/>
+
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/etDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/relOne"
+        android:layout_marginTop="15dp"
+        android:inputType="textMultiLine"
+        android:lines="5"
+        android:hint="Description"
+        android:gravity="top|left"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:padding="5dp"
+        android:scrollHorizontally="false"
+        android:background="@drawable/background_description"/>
+
+    <Button
+        android:id="@+id/btnSubmitPost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
+        android:text="Submit Post"/>
+
+    <RelativeLayout
+        android:id="@+id/rel1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <ProgressBar
+            android:id="@+id/progressbar"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerHorizontal="true"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Uploading...Please Wait"
+            android:layout_below="@id/progressbar"
+            android:layout_marginTop="10dp"
+            android:textAlignment="center"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            />
+
+    </RelativeLayout>
+
+</RelativeLayout>

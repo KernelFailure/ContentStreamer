@@ -102,7 +102,6 @@ public class HomeFeed extends AppCompatActivity {
 
                                 startActivity(intent);
 
-
                                 break;
                             case R.id.logout:
                                 Toast.makeText(mContext, "Clicked Logout", Toast.LENGTH_SHORT).show();
@@ -110,6 +109,10 @@ public class HomeFeed extends AppCompatActivity {
                             case R.id.about:
                                 Toast.makeText(mContext, "Clicked About", Toast.LENGTH_SHORT).show();
                                 break;
+                            case R.id.newPost:
+                                // start new activity to create a new post
+                                Intent newPostIntent = new Intent(mContext, CreatePostActivity.class);
+                                startActivity(newPostIntent);
                             default:
                                 Toast.makeText(mContext, "No item clicked...", Toast.LENGTH_SHORT).show();
                         }

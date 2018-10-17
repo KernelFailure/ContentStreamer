@@ -54,6 +54,9 @@ dependencies {
     implementation 'com.amazonaws:aws-android-sdk-ddb:2.6.+'
     implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.6.+'
 
+    // Amazon AppSync
+    implementation "com.amazonaws:aws-android-sdk-appsync:2.6.25"
+
     // RXJava2
     implementation "io.reactivex.rxjava2:rxjava:2.2.1"
 
