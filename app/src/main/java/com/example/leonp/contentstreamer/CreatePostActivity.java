@@ -1,7 +1,9 @@
 package com.example.leonp.contentstreamer;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -18,16 +20,22 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.bumptech.glide.Glide;
+import com.example.leonp.contentstreamer.models.Posts2DO;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.Scheduler;
@@ -42,6 +50,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
     // constants
     private final static int MEMORY_PICK_REQUEST_CODE = 1;
+    private final static int READ_EXTERNAL_STORAGE_REQUEST_CODE = 2;
 
     // widgets
     private EditText etInputTitle;
@@ -63,14 +72,28 @@ public class CreatePostActivity extends AppCompatActivity {
 
     // Observable
     private Observable<String> mUploadObservable = Observable.create(temp -> {
+        temp.onNext("hello");
         Log.d(TAG, "Post title: " + mPostTitle + "\nPost Extension: " + mImageExtension);
         AmazonS3Client client = AWSProvider.getS3Client(mContext);
         //PutObjectRequest request = new PutObjectRequest();
-        client.putObject(Constants.s3Bucket + "/public",
-                mPostTitle + "." + "jpg",
+        String key = mPostTitle + "." + "jpg";
+        PutObjectResult result = client.putObject(Constants.s3Bucket + "/public",
+                key,
                 mInputStream,
-                mObjectMetadata
-        );}
+                mObjectMetadata);
+        DynamoDBMapper mapper = AWSProvider.getDynamoDBMapper(mContext);
+        Posts2DO post = new Posts2DO();
+        post.setUserId(AWSProvider.getIdentityManager(mContext).getCachedUserID());
+        post.setTitle(mPostTitle);
+        post.setAuthor("Harry Potter");
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+        post.setCreatedAt(timeStamp);
+        post.setImagePath(key);
+        post.setPostId("4");
+        post.setStreamType("picture");
+        mapper.save(post);
+
+        }
     );
 
     @Override
@@ -93,6 +116,13 @@ public class CreatePostActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: Clicked to add picture");
+
+                if (!checkForReadStoragePermission()) {
+                    Log.d(TAG, "onClick: Read permissions weren't granted.  Requesting now");
+                    askForReadStoragePermission();
+                    return;
+                }
+
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
@@ -104,6 +134,7 @@ public class CreatePostActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v.setEnabled(false);
+
                 Log.d(TAG, "onClick: Clicked to submit post");
                 // first we have to make sure all necessary fields are filled out
 
@@ -146,9 +177,14 @@ public class CreatePostActivity extends AppCompatActivity {
                     Disposable subscribe = mUploadObservable.observeOn(AndroidSchedulers.mainThread())
                             .subscribeOn(Schedulers.io())
                             .subscribe(temp -> {
+                                TimeUnit.SECONDS.sleep(2);
                                 v.setEnabled(true);
                                 rel1.setVisibility(View.INVISIBLE);
                                 Log.d(TAG, "onClick: Finished subscription");
+                                etInputTitle.setText("");
+                                etDescription.setText("");
+                                ivContentThumbnail.setImageResource(R.drawable.ic_add);
+                                Toast.makeText(mContext, "Success!!", Toast.LENGTH_SHORT).show();
                             });
                     disposable.add(subscribe);
                 }catch (FileNotFoundException e) {
@@ -167,6 +203,20 @@ public class CreatePostActivity extends AppCompatActivity {
 
     }
 
+    private boolean checkForReadStoragePermission() {
+        if (mContext.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "checkForReadStoragePermission: Permissions for read storage are already granted");
+            return true;
+        } else {
+            Log.d(TAG, "checkForReadStoragePermission: Permissions for read storage were NOT granted");
+            return false;
+        }
+    }
+
+    private void askForReadStoragePermission() {
+        requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, READ_EXTERNAL_STORAGE_REQUEST_CODE);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -180,6 +230,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             mPostImageUri = data.getData();
+            Log.d(TAG, "onActivityResult: Post Image URI: " + mPostImageUri.toString());
             Glide.with(this).load(mPostImageUri).into(ivContentThumbnail);
         } else {
             Toast.makeText(this, "Failed to add picture", Toast.LENGTH_SHORT).show();
