@@ -90,6 +90,7 @@ public class CreatePostActivity extends AppCompatActivity {
         post.setCreatedAt(timeStamp);
         post.setImagePath(key);
         post.setPostId("4");
+        //hello
         post.setStreamType("picture");
         mapper.save(post);
 
