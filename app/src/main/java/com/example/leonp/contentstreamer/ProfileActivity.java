@@ -60,11 +60,11 @@ public class ProfileActivity extends Activity {
                 // TODO: make this button instead do an api call using retrofit to AWS API gateway
 
                 AWSConfiguration configuration = new AWSConfiguration(mContext);
-                AWSAppSyncClient client = AWSAppSyncClient
-                        .builder()
-                        .context(mContext)
-                        .awsConfiguration(configuration)
-                        .build();
+//                AWSAppSyncClient client = AWSAppSyncClient
+//                        .builder()
+//                        .context(mContext)
+//                        .awsConfiguration(configuration)
+//                        .build();
 
 
                 Observable<Void> observable = Observable.create(item -> insertIntoDb());
@@ -88,7 +88,7 @@ public class ProfileActivity extends Activity {
         post.setAuthor("Harry Potter");
         post.setCreatedAt("Today");
         post.setImagePath("fakePath");
-        //post.setPostId();
+        post.setPostId("1234");
         post.setStreamType("audio");
         mapper.save(post);
     }

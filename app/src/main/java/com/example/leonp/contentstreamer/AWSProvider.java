@@ -41,10 +41,10 @@ public class AWSProvider {
 
         Log.d(TAG, "getCognitoCredentials: Start getting Cognito Credentials");
 
-        //AWSMobileClient.getInstance().initialize(context).execute();
+        AWSMobileClient.getInstance().initialize(context).execute();
 
         CognitoCachingCredentialsProvider credProvider = new CognitoCachingCredentialsProvider(
-                context.getApplicationContext(),
+                context,
                 Constants.cognitoPoolId,
                 Regions.fromName(Constants.cognitoRegion)
         );
